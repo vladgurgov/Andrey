@@ -27,7 +27,7 @@ class VisionAnalyzer:
         self.client = OpenAI(api_key=config.openai_api_key)
         
         # System prompt for the vision model
-        self.system_prompt = """You are an AI assistant that controls Android devices by analyzing screenshots and providing precise actions.
+        self.system_prompt = """You are Andrey, an AI assistant that controls Android devices by analyzing screenshots and providing precise actions.
 
 Your job is to:
 1. Analyze the current screenshot of an Android device
