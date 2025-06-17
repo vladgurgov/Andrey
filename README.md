@@ -2,6 +2,16 @@
 
 **Andrey** is an AI-powered Android automation agent that uses OpenAI Vision API and ADB (Android Debug Bridge) to control Android devices through natural language commands. Built as part of the VG Labs toolkit for accelerating mobile game development and publishing.
 
+## 🎮 Demo
+
+Watch Andrey autonomously playing a mobile game on Android emulator:
+
+[![Andrey Playing Game Demo](https://img.youtube.com/vi/9wH22hlTlms/maxresdefault.jpg)](https://www.youtube.com/shorts/9wH22hlTlms)
+
+*🎥 [Click to watch the demo](https://www.youtube.com/shorts/9wH22hlTlms) - See how Andrey uses computer vision and natural language processing to understand game interfaces and make intelligent decisions in real-time.*
+
+> **"Just tell Andrey what to do, and watch it play!"** - No manual controls needed, just natural language commands.
+
 ## 🚀 Features
 
 - **Natural Language Control**: Execute complex tasks using simple instructions like "Open YouTube and play the first video"
