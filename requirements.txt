@@ -1,0 +1,19 @@
+# Core dependencies for Mobile Agent Library
+# AI and Machine Learning
+openai>=1.0.0
+
+# Image processing
+Pillow>=9.0.0
+
+# Standard libraries (usually included with Python)
+# typing_extensions>=4.0.0  # Uncomment if using Python < 3.8
+
+# Development and testing (optional)
+# pytest>=7.0.0
+# pytest-cov>=4.0.0
+# black>=22.0.0
+# flake8>=5.0.0
+
+# Note: ADB (Android Debug Bridge) must be installed separately
+# Download from: https://developer.android.com/studio/command-line/adb
+# Or install Android SDK Platform Tools 
