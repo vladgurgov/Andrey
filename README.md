@@ -1,6 +1,6 @@
-# Mobile Agent Library
+# Andrey by VG Labs
 
-An AI-powered Android automation tool that uses OpenAI Vision API and ADB (Android Debug Bridge) to control Android devices through natural language instructions.
+**Andrey** is an AI-powered Android automation agent that uses OpenAI Vision API and ADB (Android Debug Bridge) to control Android devices through natural language commands. Built as part of the VG Labs toolkit for accelerating mobile game development and publishing.
 
 ## 🚀 Features
 
@@ -456,4 +456,5 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ---
 
-**Happy Automating! 🤖** 
+**Happy Automating with Andrey! 🤖**  
+© VG Labs – Accelerating Mobile Game Innovation
