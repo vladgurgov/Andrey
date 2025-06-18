@@ -106,6 +106,9 @@ class MobileAgent:
         self.screenshots_taken = []
         self.is_running = True
         
+        # Clear conversation history for new instruction
+        self.vision_analyzer.clear_history()
+        
         max_steps = max_steps or self.config.max_iterations
         
         self.logger.info(f"Starting execution of instruction: '{self.current_instruction}'")
@@ -128,7 +131,8 @@ class MobileAgent:
                 action_plan = self.vision_analyzer.analyze_screenshot(
                     screenshot_path,
                     self.current_instruction,
-                    step_count
+                    step_count,
+                    previous_action=last_action
                 )
                 
                 if not action_plan:

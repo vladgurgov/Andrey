@@ -16,6 +16,7 @@ Watch Andrey autonomously playing a mobile game on Android emulator:
 
 - **Natural Language Control**: Execute complex tasks using simple instructions like "Open YouTube and play the first video"
 - **Computer Vision**: Uses OpenAI Vision API to understand and analyze device screenshots
+- **Grid-Based Coordinates**: Innovative grid overlay system for easier and more consistent coordinate selection
 - **ADB Integration**: Direct Android device control through Android Debug Bridge
 - **Loop Detection**: Intelligent detection and handling of action loops
 - **Progress Tracking**: Real-time progress callbacks and execution summaries
@@ -202,6 +203,115 @@ from mobile_agent.config import MobileAgentConfig
  )
 
 agent = MobileAgent(config=config)
+```
+
+## 📸 Screenshots and Debugging
+
+The agent automatically saves screenshots during execution for debugging and analysis:
+
+### Screenshot Files
+- **Original screenshots**: Saved to `./screenshots/` directory as `step_000.jpg`, `step_001.jpg`, etc.
+- **Scaled screenshots with grid**: Saved as `step_000_scaled.jpg`, `step_001_scaled.jpg`, etc.
+  - These show exactly what the LLM sees (scaled to 200px width with red grid overlay)
+  - Red grid lines divide the image into 10×10 pixel cells for coordinate selection
+  - Useful for debugging coordinate issues and understanding LLM decisions
+  - Dramatically smaller file sizes for faster processing
+
+### Image Processing
+- Screenshots are automatically scaled to 200px width before sending to OpenAI Vision API
+- **Grid Overlay**: Red grid lines (10×10 pixel cells) are added to scaled images for easier coordinate selection
+- **Grid-Based Coordinates**: OpenAI works with grid cells instead of pixels (e.g., cell [5, 10] instead of pixel [105, 247])
+- **Natural Tapping**: Random offsets within cells simulate realistic finger tapping behavior
+- Reduces token costs by ~90% while maintaining UI element visibility
+- Coordinates are automatically converted from grid cells to device pixels for execution
+- Maintains aspect ratio and uses high-quality LANCZOS resampling
+
+### Screenshot Management
+```bash
+# Keep screenshots for debugging (default)
+python mobile_agent_cli.py --task "Open YouTube"
+
+# Remove screenshots after execution
+python mobile_agent_cli.py --task "Go home" --cleanup-screenshots
+```
+
+### Using Screenshots for Debugging
+```python
+# Get current screenshot
+with MobileAgent(openai_api_key="your-key") as agent:
+    screenshot_path = agent.get_current_screenshot()
+    print(f"Screenshot saved: {screenshot_path}")
+    
+    # Execute task and check scaled versions
+    result = agent.execute_instruction("Open Settings")
+    
+         # Check ./screenshots/ for both original and scaled versions
+```
+
+## 🔲 Grid-Based Coordinate System
+
+Andrey uses an innovative grid-based coordinate system that makes OpenAI's job easier and simulates realistic human touch behavior:
+
+### How It Works
+1. **Image Scaling**: Screenshots are scaled to 200px width for efficiency
+2. **Grid Overlay**: Red grid lines create 10×10 pixel cells over the scaled image  
+3. **Grid Coordinates**: OpenAI selects cells (e.g., [5, 10]) instead of precise pixels
+4. **Natural Tapping**: Random offsets within cells simulate finger tapping variation
+5. **Device Conversion**: Grid coordinates are converted back to device pixels for execution
+
+### Benefits
+- **Easier for AI**: Discrete grid cells are simpler than continuous pixel coordinates
+- **More Realistic**: Humans don't tap precise pixels - they tap approximate areas
+- **Consistent**: Grid-based selection reduces coordinate precision errors
+- **Visual Debug**: Grid overlay helps debug what the AI sees and selects
+- **Intuitive**: Top-left origin matches standard screen coordinate conventions
+- **Direct Mapping**: Grid coordinates match the visual grid overlay exactly
+
+### Example Coordinate Flow
+```
+Original screenshot: 720×1600 pixels
+      ↓ Scale to 200px width
+Scaled image: 200×444 pixels  
+      ↓ Add 20×20px grid overlay
+Grid system: 10×22 cells (top-left origin)
+        ↓ OpenAI selects cell [5, 10] (top-left based)
+Random offset: [105.2, 205.8] in scaled pixels
+      ↓ Scale back to device
+Device coordinate: [378, 741] pixels
+      ↓ Execute tap
+ADB tap command
+```
+
+### Grid Overlay Visualization
+
+![Grid Example](assets/grid_example.jpg)
+
+**What you're seeing:**
+- **Red grid lines** divide the scaled image (200px width) into 20×20 pixel cells
+- **Grid coordinates** use a 10×22 cell system (10 cells wide, 22 cells tall)
+- **AI-friendly selection**: Instead of specifying precise pixels like [105, 247], OpenAI selects intuitive grid cells like [5, 12]
+- **Natural tapping simulation**: Each cell represents a finger-sized tap area (20×20 pixels = realistic touch target)
+- **Clear visual reference**: Grid lines show exactly what coordinate space the AI is working with
+
+**In this example:**
+- The blue "CONTINUE" button would be around cells [4, 19] (center-bottom area)
+- Grid cell [0, 0] is the top-left corner, [9, 21] is bottom-right corner
+- Each grid cell is large enough to reliably hit UI elements without pixel-perfect precision
+
+This approach makes mobile automation more reliable and intuitive - just like how humans naturally tap areas rather than exact pixel coordinates.
+
+### Grid Visualization
+```
+Grid Cell [0,0] = Top-left corner (like screen coordinates)
+Grid Cell [19,43] = Bottom-right corner (for 200×444 image)
+Each cell = 10×10 pixels in scaled image
+Red lines mark cell boundaries in saved screenshots
+
+Coordinate System:
+- Origin (0,0) at TOP-LEFT corner
+- X increases left → right  
+- Y increases top → bottom
+- Matches standard screen/UI coordinate convention
 ```
 
 ## 🎯 Example Instructions

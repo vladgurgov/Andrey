@@ -122,12 +122,12 @@ class ADBController:
         screenshot_height = int(device_height * self.config.screenshot_quality)
         
         # Transform coordinates from screenshot coordinate system to device coordinate system
-        # Screenshot: bottom-left origin (0,0), Y increases upward -> Device: top-left origin (0,0), Y increases downward
+        # Both screenshot and device now use top-left origin (0,0), Y increases downward - no flipping needed
         scale_factor = 1 / self.config.screenshot_quality
         
-        # Scale up and flip Y coordinate
+        # Scale up coordinates (no Y-flipping needed with top-left origin)
         scaled_x = int(x * scale_factor)
-        scaled_y = int((screenshot_height - y) * scale_factor)  # Flip Y coordinate
+        scaled_y = int(y * scale_factor)
         
         # Ensure coordinates are within device bounds
         scaled_x = max(0, min(scaled_x, device_width - 1))
@@ -135,7 +135,7 @@ class ADBController:
         
         self.logger.info(f"👆 TAP: Screenshot coords ({x}, {y}) → Device coords ({scaled_x}, {scaled_y})")
         self.logger.info(f"     Screenshot size: {screenshot_width}x{screenshot_height}, Device size: {device_width}x{device_height}")
-        self.logger.info(f"     Scale factor: {scale_factor:.2f}, Y-flipped: {screenshot_height - y} → {scaled_y}")
+        self.logger.info(f"     Scale factor: {scale_factor:.2f} (top-left origin, no Y-flip needed)")
         
         command = f"shell input tap {scaled_x} {scaled_y}"
         self._run_adb_command(command)
@@ -186,14 +186,14 @@ class ADBController:
         screenshot_height = int(device_height * self.config.screenshot_quality)
         
         # Transform coordinates from screenshot coordinate system to device coordinate system
-        # Screenshot: bottom-left origin (0,0), Y increases upward -> Device: top-left origin (0,0), Y increases downward
+        # Both screenshot and device now use top-left origin (0,0), Y increases downward - no flipping needed
         scale_factor = 1 / self.config.screenshot_quality
         
-        # Scale up and flip Y coordinates
+        # Scale up coordinates (no Y-flipping needed with top-left origin)
         scaled_x1 = int(x1 * scale_factor)
-        scaled_y1 = int((screenshot_height - y1) * scale_factor)  # Flip Y
+        scaled_y1 = int(y1 * scale_factor)
         scaled_x2 = int(x2 * scale_factor)
-        scaled_y2 = int((screenshot_height - y2) * scale_factor)  # Flip Y
+        scaled_y2 = int(y2 * scale_factor)
         
         # Ensure coordinates are within device bounds
         scaled_x1 = max(0, min(scaled_x1, device_width - 1))
@@ -203,7 +203,7 @@ class ADBController:
         
         self.logger.info(f"👆 SWIPE: Screenshot coords ({x1}, {y1}) → ({x2}, {y2})")
         self.logger.info(f"       Device coords ({scaled_x1}, {scaled_y1}) → ({scaled_x2}, {scaled_y2}) [{duration}ms]")
-        self.logger.info(f"       Y-flipped: {screenshot_height - y1}, {screenshot_height - y2}")
+        self.logger.info(f"       Scale factor: {scale_factor:.2f} (top-left origin, no Y-flip needed)")
         
         command = f"shell input swipe {scaled_x1} {scaled_y1} {scaled_x2} {scaled_y2} {duration}"
         self._run_adb_command(command)
