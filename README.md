@@ -2,6 +2,9 @@
 
 AI agent that plays Android games autonomously. Connects to a phone via ADB, captures screenshots, detects UI elements with [OmniParser](https://github.com/microsoft/OmniParser), sends annotated frames to Claude's vision API, and executes the chosen actions on the device — in a multi-turn conversation loop.
 
+[![Demo Video](https://img.youtube.com/vi/9wH22hlTlms/maxresdefault.jpg)](https://www.youtube.com/shorts/9wH22hlTlms)
+> *Early prototype (v1) — tap to watch on YouTube*
+
 ## How It Works
 
 ```
@@ -16,6 +19,16 @@ Screenshot → OmniParser (element detection) → Claude (tool-use API) → Exec
 6. Claude sees each result and can chain multiple actions per turn (e.g. select bid → tap PLAY)
 
 The multi-turn conversation preserves context across actions, and a sliding window keeps the last 8 screenshots to manage token usage.
+
+### OmniParser Annotated Screenshot
+
+Here's what Claude sees at each step — OmniParser draws numbered bounding boxes around every detected UI element:
+
+<p align="center">
+  <img src="assets/bidding_annotated.jpg" width="350" alt="OmniParser annotated screenshot showing numbered bounding boxes on bidding UI">
+</p>
+
+Claude reads the bounding box numbers visually and calls `tap_element(id=36)` to select bid "3", then `tap_element(id=14)` to hit PLAY — using exact coordinates from the detected element centers instead of guessing pixels.
 
 ## Requirements
 
@@ -107,6 +120,19 @@ andrey tap 540 1200
 | `--no-omniparser` | Disable OmniParser element detection |
 | `--save-annotated` | Save annotated screenshots alongside raw ones |
 
+## Session Logging
+
+Every `play` session writes a `session.log` to the screenshots directory with full debug output — Claude's reasoning, tool calls, element lists, and execution results. Use `--save-annotated` to also save the OmniParser annotated screenshots alongside raw ones.
+
+```
+screenshots/
+  session.log              # Full debug log
+  step_0000.jpg            # Raw screenshot
+  step_0000_annotated.jpg  # OmniParser annotated (with --save-annotated)
+  step_0001.jpg
+  ...
+```
+
 ## Game Profiles
 
 Game profiles live in `game_profiles/` as YAML files. They provide game-specific context, rules, and tips to the LLM.
@@ -177,7 +203,7 @@ src/andrey/
   device.py      — ADB device manager (screenshots, taps, swipes, keys)
   config.py      — Pydantic config models + YAML loading
   cli.py         — Click CLI entry point
-  logger.py      — Logging setup
+  logger.py      — Logging setup with file output
 ```
 
 ### Available Tools
@@ -193,6 +219,18 @@ The agent exposes these tools to Claude:
 | `press_key(BACK\|HOME\|ENTER)` | Android system key |
 | `wait(seconds)` | Wait without acting |
 | `game_over(reason)` | Signal the game has ended |
+
+## v1 vs v2
+
+| | v1 | v2 |
+|---|---|---|
+| **Vision** | OpenAI GPT-4o | Claude Sonnet (Anthropic) |
+| **Interaction** | Single-turn, coordinate grid | Multi-turn tool-use conversation |
+| **Element detection** | None (guessed pixel coords) | OmniParser V2 (YOLOv8 + Florence-2) |
+| **Accuracy** | ~50-120px error on buttons | Exact bounding box centers |
+| **Multi-step actions** | Not possible | Natural (bid → PLAY in one cycle) |
+| **Context** | None between actions | Full conversation history |
+| **Cost optimization** | Image scaling to 200px | Sliding window (8 images) |
 
 ## Known Limitations
 
