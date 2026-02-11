@@ -1,63 +1,64 @@
 # Andrey
 
-AI agent that plays Android games autonomously. Connects to a phone via ADB, captures screenshots, detects UI elements with [OmniParser](https://github.com/microsoft/OmniParser), sends annotated frames to Claude's vision API, and executes the chosen actions on the device — in a multi-turn conversation loop.
+AI agent that plays Android games autonomously — connects to an Android phone via ADB, detects UI elements with [OmniParser](https://github.com/microsoft/OmniParser), reasons about game state with Claude's vision API, and executes actions on the device in a multi-turn conversation loop.
 
-[![Demo Video](https://img.youtube.com/vi/9wH22hlTlms/maxresdefault.jpg)](https://www.youtube.com/shorts/9wH22hlTlms)
-> *Early prototype (v1) — tap to watch on YouTube*
+<p align="center">
+  <a href="https://www.youtube.com/shorts/9wH22hlTlms">
+    <img src="https://img.youtube.com/vi/9wH22hlTlms/maxresdefault.jpg" width="300" alt="Demo Video">
+  </a>
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="assets/bidding_annotated.jpg" width="180" alt="OmniParser annotated screenshot">
+</p>
+<p align="center">
+  <em>Left: early prototype in action (<a href="https://www.youtube.com/shorts/9wH22hlTlms">watch on YouTube</a>) · Right: what the agent sees (OmniParser bounding boxes)</em>
+</p>
 
 ## How It Works
 
 ```
-                          ANDREY AGENT LOOP
-  ┌──────────────────────────────────────────────────────────┐
-  │                                                          │
-  │   ┌─────────┐     ┌────────────┐     ┌───────────────┐  │
-  │   │ Android │────>│ OmniParser │────>│    Claude      │  │
-  │   │ Device  │ ADB │ V2 (local) │     │ Vision + Tools │  │
-  │   │         │     │            │     │                │  │
-  │   │  ┌───┐  │     │ YOLOv8     │     │ "I see bid 3  │  │
-  │   │  │   │  │     │ Florence-2 │     │  at element 36,│  │
-  │   │  │ # │  │     │ OCR        │     │  tapping it"  │  │
-  │   │  └───┘  │     │            │     │                │  │
-  │   └────▲────┘     └────────────┘     └───────┬───────┘  │
-  │        │          screenshot with                │        │
-  │        │          numbered boxes           tool call     │
-  │        │               [5] [14]       tap_element(36)    │
-  │        │               [36] [42]                │        │
-  │        │                                        │        │
-  │        └────────────────────────────────────────┘        │
-  │                     execute on device                    │
-  │                     wait for animation                   │
-  │                     capture new screenshot               │
-  └──────────────────────────────────────────────────────────┘
+                            ANDREY AGENT LOOP
+    ┌──────────────────────────────────────────────────────────┐
+    │                                                          │
+    │   ┌─────────┐     ┌────────────┐     ┌───────────────┐  │
+    │   │ Android │────>│ OmniParser │────>│    Claude      │  │
+    │   │ Device  │ ADB │ V2 (local) │     │ Vision + Tools │  │
+    │   │         │     │            │     │                │  │
+    │   │  ┌───┐  │     │ YOLOv8     │     │ "I see bid 3  │  │
+    │   │  │   │  │     │ Florence-2 │     │  at element 36,│  │
+    │   │  │ # │  │     │ OCR        │     │  tapping it"  │  │
+    │   │  └───┘  │     │            │     │                │  │
+    │   └────▲────┘     └────────────┘     └───────┬───────┘  │
+    │        │          screenshot with                │       │
+    │        │          numbered boxes           tool call     │
+    │        │               [5] [14]       tap_element(36)    │
+    │        │               [36] [42]                │        │
+    │        │                                        │        │
+    │        └────────────────────────────────────────┘        │
+    │                     execute on device                    │
+    │                     wait for animation                   │
+    │                     capture new screenshot               │
+    └──────────────────────────────────────────────────────────┘
 ```
 
-**Each step:**
+1. **Capture** — screenshot the phone via ADB, wait for animations to settle
+2. **Detect** — OmniParser V2 (YOLOv8 + Florence-2 + OCR) draws numbered bounding boxes on every UI element
+3. **Reason** — Claude sees the annotated image, reads box numbers visually, picks a tool: `tap_element(id=36)` or `tap(x, y)` as fallback
+4. **Execute** — tap/swipe/wait on the device, capture result, feed back to Claude
 
-1. **Capture** — take a stable screenshot from the phone via ADB (waits for animations to settle)
-2. **Detect** — OmniParser V2 runs locally (YOLOv8 + Florence-2 + OCR) and draws numbered bounding boxes on every UI element
-3. **Reason** — Claude sees the annotated screenshot, reads the box numbers visually, and picks a tool: `tap_element(id=36)` for detected elements or `tap(x, y)` as fallback
-4. **Execute** — the agent taps/swipes/waits on the device, captures the result, and feeds it back to Claude
+The conversation is **multi-turn** — Claude remembers previous steps. A sliding window keeps the last 8 screenshots in context to manage token costs.
 
-The entire conversation is **multi-turn** — Claude remembers what happened 5 steps ago. A sliding window keeps the last 8 screenshots in context to manage token costs.
+## Quick Start
 
-### OmniParser Annotated Screenshot
+```bash
+# Install
+pip install -e .
+export ANTHROPIC_API_KEY="sk-ant-..."
 
-Here's what Claude sees at each step — OmniParser draws numbered bounding boxes around every detected UI element:
+# Play
+andrey play --profile spades --steps 20 --save-annotated
+```
 
-<p align="center">
-  <img src="assets/bidding_annotated.jpg" width="350" alt="OmniParser annotated screenshot showing numbered bounding boxes on bidding UI">
-</p>
-
-Claude reads the bounding box numbers visually and calls `tap_element(id=36)` to select bid "3", then `tap_element(id=14)` to hit PLAY — using exact coordinates from the detected element centers instead of guessing pixels.
-
-## Requirements
-
-- Python 3.10+
-- Android device with USB debugging enabled
-- ADB server running (`adb start-server`)
-- [Anthropic API key](https://console.anthropic.com/)
-- (Optional) OmniParser V2 for UI element detection
+**Requirements:** Python 3.10+, Android device with USB debugging, ADB running, [Anthropic API key](https://console.anthropic.com/)
 
 ## Installation
 
@@ -65,27 +66,17 @@ Claude reads the bounding box numbers visually and calls `tap_element(id=36)` to
 pip install -e .
 ```
 
-Set your API key:
-```bash
-export ANTHROPIC_API_KEY="sk-ant-..."
-```
-
 ### OmniParser Setup (recommended)
 
-OmniParser runs locally on Apple Silicon (MPS), CUDA, or CPU. It adds ~3.5s per frame on MPS but dramatically improves action accuracy by detecting exact element bounding boxes.
+OmniParser runs locally on Apple Silicon (MPS), CUDA, or CPU. Adds ~3.5s per frame but gives exact element bounding boxes instead of guessed coordinates.
 
 ```bash
-# Clone OmniParser
 git clone https://github.com/microsoft/OmniParser.git ~/OmniParser
-
-# Download weights (~2-3 GB)
 huggingface-cli download microsoft/OmniParser-v2.0 --local-dir ~/OmniParser/weights
-
-# Install OmniParser dependencies
 pip install -e '.[omniparser]'
 ```
 
-Create a `config.yaml` pointing to OmniParser:
+Point your `config.yaml` at it:
 ```yaml
 omniparser:
   enabled: true
@@ -99,64 +90,35 @@ Without OmniParser, the agent falls back to raw screenshots with coordinate-base
 ## Usage
 
 ```bash
-# Play a game (uses default profile)
-andrey play
+andrey play                                        # default profile, 100 steps
+andrey play --profile spades -v                    # verbose logging
+andrey play --profile spades --steps 20 --delay 2  # 20 steps, 2s between actions
+andrey play --no-omniparser                        # disable element detection
+andrey play --save-annotated                       # save OmniParser debug images
+andrey play --context "Bid conservatively"         # extra LLM context
 
-# Play Spades with verbose logging
-andrey play --profile spades -v
-
-# Run for 20 steps with 2s delay between actions
-andrey play --profile spades --steps 20 --delay 2
-
-# Run without OmniParser
-andrey play --no-omniparser
-
-# Save OmniParser annotated screenshots for debugging
-andrey play --profile spades --save-annotated
-
-# Pass extra context to the LLM
-andrey play --profile spades --context "Focus on winning tricks, bid conservatively"
-
-# Take a single screenshot and describe it
-andrey screenshot --save screen.png
-
-# List connected devices
-andrey devices
-
-# Tap a specific coordinate
-andrey tap 540 1200
+andrey screenshot --save screen.png                # single screenshot
+andrey devices                                     # list connected devices
+andrey tap 540 1200                                # manual tap
 ```
 
-### CLI Options for `play`
+### CLI Options
 
 | Option | Description |
 |---|---|
 | `--profile, -p` | Game profile name (from `game_profiles/`) |
-| `--device, -d` | ADB device serial number |
-| `--steps, -n` | Number of steps (actions) to execute (default 100) |
+| `--device, -d` | ADB device serial |
+| `--steps, -n` | Number of actions to execute (default 100) |
 | `--delay` | Seconds between steps |
-| `--context` | Extra context string for the LLM |
-| `--max-images` | Max screenshots kept in conversation context (default 8) |
+| `--context` | Extra context for the LLM |
+| `--max-images` | Screenshots kept in context (default 8) |
 | `--omniparser-path` | Path to OmniParser repo |
-| `--no-omniparser` | Disable OmniParser element detection |
-| `--save-annotated` | Save annotated screenshots alongside raw ones |
-
-## Session Logging
-
-Every `play` session writes a `session.log` to the screenshots directory with full debug output — Claude's reasoning, tool calls, element lists, and execution results. Use `--save-annotated` to also save the OmniParser annotated screenshots alongside raw ones.
-
-```
-screenshots/
-  session.log              # Full debug log
-  step_0000.jpg            # Raw screenshot
-  step_0000_annotated.jpg  # OmniParser annotated (with --save-annotated)
-  step_0001.jpg
-  ...
-```
+| `--no-omniparser` | Disable OmniParser |
+| `--save-annotated` | Save annotated screenshots alongside raw |
 
 ## Game Profiles
 
-Game profiles live in `game_profiles/` as YAML files. They provide game-specific context, rules, and tips to the LLM.
+YAML files in `game_profiles/` give the agent game-specific rules, strategy tips, and context.
 
 ```yaml
 name: "Spades"
@@ -166,21 +128,21 @@ system_context: |
   You are playing the card game Spades on an Android phone.
 
 rules: |
-  - Spades is always trump.
-  - You must follow suit if possible.
+  - Spades is always trump
+  - You must follow suit if possible
   ...
 
 tips: |
-  - During bidding, count your high cards and spades.
-  - BIDDING UI: first tap the number element, then tap PLAY.
+  - During bidding, count your high cards and spades
+  - BIDDING UI: first tap the number element, then tap PLAY
   ...
 ```
 
-A `default.yaml` profile is included for generic games. To add a new game, create a YAML file in `game_profiles/` with the fields above.
+A `default.yaml` profile is included for generic games.
 
 ## Configuration
 
-Copy `config.example.yaml` to `config.yaml` and edit:
+Copy `config.example.yaml` to `config.yaml`:
 
 ```yaml
 anthropic:
@@ -189,22 +151,22 @@ anthropic:
   max_tokens: 1024
 
 loop:
-  delay_seconds: 1.5   # pause between steps
-  max_steps: 100        # total actions before stopping
-  error_threshold: 5    # consecutive errors before stopping
+  delay_seconds: 1.5
+  max_steps: 100
+  error_threshold: 5
 
 conversation:
-  max_images: 8         # max screenshots in context window
+  max_images: 8        # sliding window size
 
 device:
-  serial: null          # null = auto-detect single device
+  serial: null         # null = auto-detect
   adb_host: "127.0.0.1"
   adb_port: 5037
 
 omniparser:
   enabled: true
-  omniparser_path: ""   # auto-detect ~/OmniParser if empty
-  device: "mps"         # mps, cuda, or cpu
+  omniparser_path: ""  # auto-detect ~/OmniParser if empty
+  device: "mps"        # mps, cuda, or cpu
 
 game_profile: "default"
 save_screenshots: true
@@ -212,50 +174,61 @@ save_annotated: false
 screenshot_dir: "./screenshots"
 ```
 
+## Session Logging
+
+Every session writes `session.log` with full debug output — Claude's reasoning, tool calls, element lists, and results:
+
+```
+screenshots/
+  session.log              # full debug log
+  step_0000.jpg            # raw screenshot
+  step_0000_annotated.jpg  # OmniParser overlay (--save-annotated)
+  step_0001.jpg
+  ...
+```
+
 ## Architecture
 
 ```
 src/andrey/
-  agent.py       — Main observation-action loop with tool dispatch
+  agent.py       — observation-action loop + tool dispatch
   vision.py      — ConversationClient (multi-turn) + VisionClient (single-turn)
-  omniparser.py  — OmniParser V2 wrapper with graceful fallback
-  models.py      — Tool definitions, ToolCall, ApiResponse, GameAction
-  prompts.py     — System prompt builder + game profile loader
+  omniparser.py  — OmniParser V2 wrapper, graceful fallback
+  models.py      — tool definitions, ToolCall, ApiResponse, GameAction
+  prompts.py     — system prompt builder + game profile loader
   device.py      — ADB device manager (screenshots, taps, swipes, keys)
   config.py      — Pydantic config models + YAML loading
   cli.py         — Click CLI entry point
-  logger.py      — Logging setup with file output
+  logger.py      — logging setup with file output
 ```
 
-### Available Tools
-
-The agent exposes these tools to Claude:
+### Tools
 
 | Tool | Description |
 |---|---|
-| `tap_element(element_id)` | Tap a detected UI element by its OmniParser ID (preferred) |
-| `tap(x, y)` | Tap at raw pixel coordinates (fallback) |
+| `tap_element(element_id)` | Tap detected UI element by OmniParser ID *(preferred)* |
+| `tap(x, y)` | Tap at pixel coordinates *(fallback)* |
 | `swipe(x1, y1, x2, y2)` | Swipe gesture |
 | `long_press(x, y)` | Long press |
 | `press_key(BACK\|HOME\|ENTER)` | Android system key |
 | `wait(seconds)` | Wait without acting |
-| `game_over(reason)` | Signal the game has ended |
+| `game_over(reason)` | Signal game ended |
 
 ## v1 vs v2
 
 | | v1 | v2 |
 |---|---|---|
-| **Vision** | OpenAI GPT-4o | Claude Sonnet (Anthropic) |
+| **Vision** | OpenAI GPT-4o | Claude Sonnet |
 | **Interaction** | Single-turn, coordinate grid | Multi-turn tool-use conversation |
-| **Element detection** | None (guessed pixel coords) | OmniParser V2 (YOLOv8 + Florence-2) |
-| **Accuracy** | ~50-120px error on buttons | Exact bounding box centers |
-| **Multi-step actions** | Not possible | Natural (bid → PLAY in one cycle) |
+| **Element detection** | None (guessed pixels) | OmniParser V2 (YOLOv8 + Florence-2) |
+| **Accuracy** | ~50-120px error | Exact bounding box centers |
+| **Multi-step** | Not possible | Natural (bid → PLAY in one cycle) |
 | **Context** | None between actions | Full conversation history |
-| **Cost optimization** | Image scaling to 200px | Sliding window (8 images) |
+| **Cost** | Image scaling to 200px | Sliding window (8 images) |
 
 ## Known Limitations
 
-- **Unity games** render everything on a single canvas, so Android accessibility tools don't work — OmniParser's vision-based detection is the only option
+- **Unity games** render on a single canvas — Android accessibility tools don't work, OmniParser's vision detection is the only option
 - OmniParser adds ~3.5s latency per frame on Apple Silicon MPS
 - `transformers` must be `<5` (v5 breaks Florence-2 custom code in OmniParser)
-- Banner ads at the bottom of the screen can occasionally steal taps
+- Banner ads can occasionally steal taps
