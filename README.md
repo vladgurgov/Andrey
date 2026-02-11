@@ -8,17 +8,38 @@ AI agent that plays Android games autonomously. Connects to a phone via ADB, cap
 ## How It Works
 
 ```
-Screenshot → OmniParser (element detection) → Claude (tool-use API) → Execute action → repeat
+                          ANDREY AGENT LOOP
+  ┌──────────────────────────────────────────────────────────┐
+  │                                                          │
+  │   ┌─────────┐     ┌────────────┐     ┌───────────────┐  │
+  │   │ Android │────>│ OmniParser │────>│    Claude      │  │
+  │   │ Device  │ ADB │ V2 (local) │     │ Vision + Tools │  │
+  │   │         │     │            │     │                │  │
+  │   │  ┌───┐  │     │ YOLOv8     │     │ "I see bid 3  │  │
+  │   │  │   │  │     │ Florence-2 │     │  at element 36,│  │
+  │   │  │ # │  │     │ OCR        │     │  tapping it"  │  │
+  │   │  └───┘  │     │            │     │                │  │
+  │   └────▲────┘     └────────────┘     └───────┬───────┘  │
+  │        │          screenshot with                │        │
+  │        │          numbered boxes           tool call     │
+  │        │               [5] [14]       tap_element(36)    │
+  │        │               [36] [42]                │        │
+  │        │                                        │        │
+  │        └────────────────────────────────────────┘        │
+  │                     execute on device                    │
+  │                     wait for animation                   │
+  │                     capture new screenshot               │
+  └──────────────────────────────────────────────────────────┘
 ```
 
-1. **Capture** a stable screenshot from the Android device via ADB
-2. **Detect** UI elements using OmniParser V2 (YOLOv8 + Florence-2 + OCR), producing numbered bounding boxes
-3. **Send** the annotated screenshot + element list to Claude in a multi-turn conversation
-4. **Claude picks tools** — `tap_element(id=5)` for detected elements, or `tap(x, y)` as fallback
-5. **Execute** the action on the device, capture the result, detect elements again, return to Claude
-6. Claude sees each result and can chain multiple actions per turn (e.g. select bid → tap PLAY)
+**Each step:**
 
-The multi-turn conversation preserves context across actions, and a sliding window keeps the last 8 screenshots to manage token usage.
+1. **Capture** — take a stable screenshot from the phone via ADB (waits for animations to settle)
+2. **Detect** — OmniParser V2 runs locally (YOLOv8 + Florence-2 + OCR) and draws numbered bounding boxes on every UI element
+3. **Reason** — Claude sees the annotated screenshot, reads the box numbers visually, and picks a tool: `tap_element(id=36)` for detected elements or `tap(x, y)` as fallback
+4. **Execute** — the agent taps/swipes/waits on the device, captures the result, and feeds it back to Claude
+
+The entire conversation is **multi-turn** — Claude remembers what happened 5 steps ago. A sliding window keeps the last 8 screenshots in context to manage token costs.
 
 ### OmniParser Annotated Screenshot
 
