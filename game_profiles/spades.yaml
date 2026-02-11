@@ -1,0 +1,37 @@
+name: "Spades"
+app_package: "com.youxi.spades"
+
+system_context: |
+  You are playing the card game Spades on an Android phone.
+  This is a trick-taking card game played with a standard 52-card deck.
+  You are one player (usually at the bottom of the screen).
+  The game is turn-based - you play one card per trick.
+
+rules: |
+  - Spades is always trump (highest suit).
+  - You must follow suit if possible.
+  - The highest card of the led suit wins, unless a spade is played.
+  - The highest spade wins if any spades are played.
+  - Each player bids how many tricks they expect to win at the start of each round.
+  - Making your bid exactly gives a bonus. Going over accumulates bags.
+  - Bags penalty: every 10 bags costs 100 points.
+  - Nil bid (0 tricks) gives 100 points if successful, -100 if you take any trick.
+
+tips: |
+  - During bidding, count your high cards (Aces, Kings) and spades to estimate tricks.
+  - A safe bid is usually your number of Aces plus number of spades above 3.
+  - Lead with Aces of non-spade suits early to win easy tricks.
+  - Save your high spades for later in the round when opponents are out of suits.
+  - If you cannot follow suit, consider trumping with a low spade.
+  - Watch what cards have been played to track remaining cards.
+  - Look at your partner's plays for signals about their hand strength.
+  - MULTI-STEP ACTIONS: You can take multiple actions per turn. For bidding: first tap the number element, then tap the PLAY element. You will see the result after each tap.
+  - BIDDING UI: Look for number buttons (0-13) and a green "PLAY" button. Use tap_element to tap the bid number, then tap_element to tap PLAY.
+  - CARD PLAY: Your cards are at the VERY bottom of the screen. The annotated screenshot shows numbered bounding boxes on and around each card. ALWAYS use tap_element(element_id=N) by matching the visible number on the card you want to play — the element descriptions may say nonsense like "fire hydrant" or "simple symbol" but the bounding box coordinates are accurate. Look at the screenshot, find the card you want, read the number label drawn on or near it, and use that ID.
+  - CONTINUE BUTTON: After a round, look for a blue "CONTINUE" element. Use tap_element to tap it.
+  - If the game is waiting for you to play a card and you see cards in your hand, TAP A CARD. Do NOT use "wait" when it is your turn.
+  - If you previously tapped but the screen did not change, try a different element.
+  - RATING POPUPS: If a rating popup or ad appears, look for elements labeled "NOT NOW", "X", "CLOSE", or similar. Tap them to dismiss.
+  - INTERSTITIAL ADS: Between rounds, full-screen ads may appear. Look for an "X" close element (usually top-right or top-left). If no close element is detected, wait a few seconds — it may appear after a countdown.
+  - BANNER ADS: There may be banner ads at the very bottom of the screen. Do NOT tap these — they open other apps. Only tap game UI elements.
+  - If a non-game app opens accidentally, the system will automatically re-launch the Spades app.

@@ -1,0 +1,15 @@
+name: "Generic Game"
+
+system_context: |
+  You are playing a mobile game on an Android phone.
+  Analyze each screenshot to understand the game state and take appropriate actions.
+  Look for buttons, interactive elements, cards, game pieces, and UI controls.
+
+rules: ""
+
+tips: |
+  - Look for highlighted or glowing elements indicating it's your turn.
+  - Look for buttons labeled "Play", "OK", "Continue", "Next", etc.
+  - If you see a menu or popup, interact with it appropriately.
+  - If the game appears stuck, try tapping the center of the screen.
+  - Dismiss ads by looking for "X" close buttons, usually in corners.

@@ -1,0 +1,35 @@
+# Andrey - AI Game Playing Agent Configuration
+# Copy this file to config.yaml and fill in your API key.
+# You can also set ANTHROPIC_API_KEY as an environment variable instead.
+
+anthropic:
+  api_key: ""  # or set ANTHROPIC_API_KEY env var
+  model: "claude-sonnet-4-20250514"
+  max_tokens: 1024
+  temperature: 0.0
+
+loop:
+  delay_seconds: 1.5        # pause between steps
+  max_steps: 100             # total actions before stopping
+  error_threshold: 5         # consecutive errors before stopping
+
+conversation:
+  max_images: 8              # max screenshots kept in context window
+  stabilization_timeout: 2.0 # max seconds to wait for screen to settle
+  stabilization_interval: 0.3
+
+device:
+  serial: null       # null = auto-detect single device
+  adb_host: "127.0.0.1"
+  adb_port: 5037
+
+omniparser:
+  enabled: true
+  omniparser_path: ""  # auto-detect ~/OmniParser if empty
+  weights_path: ""
+  device: "mps"        # mps, cuda, or cpu
+
+game_profile: "default"  # name of profile in game_profiles/ directory
+save_screenshots: true
+save_annotated: false    # save OmniParser annotated screenshots (debug)
+screenshot_dir: "./screenshots"
